@@ -59,6 +59,15 @@ func (l *Lexer) readChar() {
 	l.row += 1
 }
 
+func (l *Lexer) peekChar() rune {
+	if l.readPosition >= len(l.input) {
+		return 0
+	} else {
+		runeValue, _ := utf8.DecodeRuneInString(l.input[l.readPosition:])
+		return runeValue
+	}
+}
+
 func (l *Lexer) readIdentifier() string {
 	position := l.position
 	for unicode.IsLetter(l.char) {
@@ -69,7 +78,12 @@ func (l *Lexer) readIdentifier() string {
 
 func (l *Lexer) readNumber() string {
 	position := l.position
-	for unicode.IsDigit(l.char) {
+	// 支持小数
+	firstPoint := false
+	for (unicode.IsDigit(l.char) || l.char == '.') && !firstPoint {
+		if l.char == '.' {
+			firstPoint = true
+		}
 		l.readChar()
 	}
 	return l.input[position:l.position]
@@ -82,17 +96,45 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.char {
 	case '=':
-		t = l.newToken(token.ASSIGN, l.char)
+		if l.peekChar() == '=' {
+			ch := l.char
+			l.readChar()
+			literal := string(ch) + string(l.char)
+			t = token.Token{Type: token.EQ, Literal: literal, Line: l.line, Row: l.row}
+		} else {
+			t = l.newToken(token.ASSIGN, l.char)
+		}
+	case '+':
+		t = l.newToken(token.PLUS, l.char)
+	case '-':
+		t = l.newToken(token.MINUS, l.char)
+	case '*':
+		t = l.newToken(token.MULTI, l.char)
+	case '/':
+		t = l.newToken(token.DIV, l.char)
+	case '!':
+		if l.peekChar() == '=' {
+			ch := l.char
+			l.readChar()
+			literal := string(ch) + string(l.char)
+			t = token.Token{Type: token.NOT_EQ, Literal: literal, Line: l.line, Row: l.row}
+		} else {
+			t = l.newToken(token.BANG, l.char)
+		}
+	case '%':
+		t = l.newToken(token.MOD, l.char)
+	case '<':
+		t = l.newToken(token.LT, l.char)
+	case '>':
+		t = l.newToken(token.GT, l.char)
+	case ',':
+		t = l.newToken(token.COMMA, l.char)
 	case ';':
 		t = l.newToken(token.SEMICOLON, l.char)
 	case '(':
 		t = l.newToken(token.LPAREN, l.char)
 	case ')':
 		t = l.newToken(token.RPAREN, l.char)
-	case ',':
-		t = l.newToken(token.COMMA, l.char)
-	case '+':
-		t = l.newToken(token.PLUS, l.char)
 	case '{':
 		t = l.newToken(token.LBRACE, l.char)
 	case '}':
