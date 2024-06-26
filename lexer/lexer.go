@@ -78,12 +78,7 @@ func (l *Lexer) readIdentifier() string {
 
 func (l *Lexer) readNumber() string {
 	position := l.position
-	// 支持小数
-	firstPoint := false
-	for (unicode.IsDigit(l.char) || l.char == '.') && !firstPoint {
-		if l.char == '.' {
-			firstPoint = true
-		}
+	for unicode.IsDigit(l.char) {
 		l.readChar()
 	}
 	return l.input[position:l.position]
