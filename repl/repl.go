@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"learn-interpreter/lexer"
-	"learn-interpreter/token"
+	"learn-interpreter/parser"
 )
 
 const Prompt = ">>"
@@ -21,9 +21,20 @@ func Start(in io.Reader, out io.Writer) {
 
 		line := scanner.Text()
 		l := lexer.New(line)
-
-		for t := l.NextToken(); t.Type != token.EOF; t = l.NextToken() {
-			fmt.Fprintf(out, "%+v\n", t)
+		p := parser.New(l)
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			printParserErrors(out, p.Errors())
+			continue
 		}
+		io.WriteString(out, program.String())
+		io.WriteString(out, "\n")
+	}
+}
+
+func printParserErrors(out io.Writer, errors []string) {
+	for _, msg := range errors {
+		io.WriteString(out, " parser errors:\n")
+		io.WriteString(out, "\t"+msg+"\n")
 	}
 }

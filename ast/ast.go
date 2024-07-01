@@ -197,15 +197,15 @@ func (bs *BlockStatement) String() string {
 	return out.String()
 }
 
-type FunctionExpression struct {
+type FunctionLiteral struct {
 	Token      token.Token
 	Parameters []*Identifier
 	Body       *BlockStatement
 }
 
-func (fn *FunctionExpression) expressionNode()      {}
-func (fn *FunctionExpression) TokenLiteral() string { return fn.Token.Literal }
-func (fn *FunctionExpression) String() string {
+func (fn *FunctionLiteral) expressionNode()      {}
+func (fn *FunctionLiteral) TokenLiteral() string { return fn.Token.Literal }
+func (fn *FunctionLiteral) String() string {
 	var out bytes.Buffer
 
 	var params []string
@@ -217,5 +217,26 @@ func (fn *FunctionExpression) String() string {
 	out.WriteString(strings.Join(params, ", "))
 	out.WriteString(") ")
 	out.WriteString(fn.Body.String())
+	return out.String()
+}
+
+type CallExpression struct {
+	Token     token.Token
+	Function  Expression
+	Arguments []Expression
+}
+
+func (ce *CallExpression) expressionNode()      {}
+func (ce *CallExpression) TokenLiteral() string { return ce.Token.Literal }
+func (ce *CallExpression) String() string {
+	var out bytes.Buffer
+	args := []string{}
+	for _, a := range ce.Arguments {
+		args = append(args, a.String())
+	}
+	out.WriteString(ce.Function.String())
+	out.WriteString("(")
+	out.WriteString(strings.Join(args, ", "))
+	out.WriteString(")")
 	return out.String()
 }
