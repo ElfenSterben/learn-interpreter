@@ -84,6 +84,37 @@ func (l *Lexer) readNumber() string {
 	return l.input[position:l.position]
 }
 
+func (l *Lexer) readString() string {
+	//position := l.position + 1
+	result := ""
+	for {
+		l.readChar()
+		if l.char == '"' || l.char == 0 {
+			break
+		}
+		if l.char == '\\' {
+			switch l.peekChar() {
+			case 't':
+				result += "\t"
+			case 'n':
+				result += "\n"
+			case 'r':
+				result += "\r"
+			case '\\':
+				result += "\\"
+			case '"':
+				result += "\""
+			default:
+				result += l.input[l.position : l.position+2]
+			}
+			l.readChar()
+		} else {
+			result += string(l.char)
+		}
+	}
+	return result
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var t token.Token
 
@@ -134,6 +165,9 @@ func (l *Lexer) NextToken() token.Token {
 		t = l.newToken(token.LBRACE, l.char)
 	case '}':
 		t = l.newToken(token.RBRACE, l.char)
+	case '"':
+		t.Type = token.STRING
+		t.Literal = l.readString()
 	case 0:
 		t = l.newToken(token.EOF, 0)
 	default:

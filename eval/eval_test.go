@@ -291,3 +291,53 @@ func TestClosures(t *testing.T) {
  addTwo(2);`
 	testIntegerObject(t, testEval(input), 4)
 }
+
+func TestString(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{`"hello world";`, "hello world"},
+		{`"hello\t world";`, "hello\t world"},
+		{`"hello\r world";`, "hello\r world"},
+		{`"hello\n world";`, "hello\n world"},
+		{`"hello\\ world";`, "hello\\ world"},
+		{`"hello\" world";`, "hello\" world"},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		str, ok := evaluated.(*object.String)
+		if !ok {
+			t.Fatalf("object is not String. got=%T (%+v)", evaluated, evaluated)
+		}
+		if str.Value != tt.expected {
+			t.Errorf("String has wrong value. got=%q", str.Value)
+		}
+	}
+}
+
+func TestStringConcatenation(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		{`"Hello" + " " + "World!"`, "Hello World!"},
+		{`"Hello" == "World!"`, false},
+		{`"Hello" != "World!"`, true},
+	}
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		switch evaluated.(type) {
+		case *object.String:
+			if evaluated.(*object.String).Value != tt.expected {
+				t.Errorf("result has wrong value. got=%v, expected %v", evaluated.(*object.String).Value, tt.expected)
+			}
+		case *object.Boolean:
+			testBooleanObject(t, evaluated, tt.expected.(bool))
+		default:
+			t.Fatalf("object is wrong type. got=%T (%+v)", evaluated, evaluated)
+
+		}
+
+	}
+}

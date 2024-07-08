@@ -748,3 +748,34 @@ func TestReturnStatements(t *testing.T) {
 		}
 	}
 }
+
+func TestStringLiteralExpression(t *testing.T) {
+	tests := []struct {
+		input         string
+		expectedValue interface{}
+	}{
+		{`"hello world";`, "hello world"},
+		{`"hello\t world";`, "hello\t world"},
+		{`"hello\r world";`, "hello\r world"},
+		{`"hello\n world";`, "hello\n world"},
+		{`"hello\\ world";`, "hello\\ world"},
+		{`"hello\" world";`, "hello\" world"},
+	}
+	for _, tt := range tests {
+		l := lexer.New(tt.input)
+		p := New(l)
+		program := p.ParseProgram()
+		checkParserErrors(t, p)
+		if len(program.Statements) != 1 {
+			t.Fatalf("program.Statements does not contain 1 statements. got=%d", len(program.Statements))
+		}
+		stmt := program.Statements[0].(*ast.ExpressionStatement)
+		literal, ok := stmt.Expression.(*ast.StringLiteral)
+		if !ok {
+			t.Fatalf("stmt is not ast.StringLiteral. got=%T", stmt.Expression)
+		}
+		if literal.Value != tt.expectedValue {
+			t.Errorf("literal.Value not %q. got=%q", tt.expectedValue, literal.Value)
+		}
+	}
+}
