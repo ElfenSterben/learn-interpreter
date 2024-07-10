@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"learn-interpreter/ast"
 	"strings"
 )
@@ -18,26 +19,57 @@ const (
 	OBJ_TYPE_FUNCTION     = "Function"
 	OBJ_TYPE_STRING       = "String"
 	OBJ_TYPE_BUILTIN      = "BuiltIn"
+	OBJ_TYPE_ARRAY        = "Array"
+	OBJ_TYPE_HASH         = "Hash"
 )
+
+type HashKey struct {
+	Type  ObjectType
+	Value uint64
+}
 
 type Object interface {
 	Type() ObjectType
 	Inspect() string
 }
 
+type Hashable interface {
+	HashKey() HashKey
+}
+
 type Integer struct {
-	Value int64
+	Value   int64
+	hashKey HashKey
 }
 
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) Type() ObjectType { return OBJ_TYPE_INTEGER }
+func (i *Integer) HashKey() HashKey {
+	if i.hashKey.Value == 0 && i.hashKey.Type == "" {
+		i.hashKey = HashKey{Type: i.Type(), Value: uint64(i.Value)}
+	}
+	return i.hashKey
+}
 
 type Boolean struct {
-	Value bool
+	Value   bool
+	hashKey HashKey
 }
 
 func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
 func (b *Boolean) Type() ObjectType { return OBJ_TYPE_BOOLEAN }
+func (b *Boolean) HashKey() HashKey {
+	if b.hashKey.Value == 0 && b.hashKey.Type == "" {
+		var value uint64
+		if b.Value {
+			value = 1
+		} else {
+			value = 0
+		}
+		b.hashKey = HashKey{Type: b.Type(), Value: value}
+	}
+	return b.hashKey
+}
 
 type Null struct{}
 
@@ -81,11 +113,20 @@ func (f *Function) Inspect() string {
 }
 
 type String struct {
-	Value string
+	Value   string
+	hashKey HashKey
 }
 
 func (s *String) Type() ObjectType { return OBJ_TYPE_STRING }
 func (s *String) Inspect() string  { return s.Value }
+func (s *String) HashKey() HashKey {
+	if s.hashKey.Value == 0 && s.hashKey.Type == "" {
+		h := fnv.New64a()
+		h.Write([]byte(s.Value))
+		s.hashKey = HashKey{Type: s.Type(), Value: h.Sum64()}
+	}
+	return s.hashKey
+}
 
 type BuiltinFunction func(args ...Object) Object
 
@@ -95,3 +136,43 @@ type Builtin struct {
 
 func (b *Builtin) Type() ObjectType { return OBJ_TYPE_BUILTIN }
 func (b *Builtin) Inspect() string  { return "builtin function" }
+
+type Array struct {
+	Elements []Object
+}
+
+func (ao *Array) Type() ObjectType { return OBJ_TYPE_ARRAY }
+func (ao *Array) Inspect() string {
+	var out bytes.Buffer
+	elements := []string{}
+	for _, e := range ao.Elements {
+		elements = append(elements, e.Inspect())
+	}
+	out.WriteString("[")
+	out.WriteString(strings.Join(elements, ", "))
+	out.WriteString("]")
+	return out.String()
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return OBJ_TYPE_HASH }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+	pairs := []string{}
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s",
+			pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+	out.WriteString("{")
+	out.WriteString(strings.Join(pairs, ", "))
+	out.WriteString("}")
+	return out.String()
+}

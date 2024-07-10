@@ -28,6 +28,8 @@ func TestNextToken(t *testing.T) {
 	"foo\\ bar"
 	"foo\r bar"
 	"foo\" bar"
+ 	[1, 2]; 
+	{1:2, "a": "b", true:false};
     `
 	tests := []struct {
 		expectedType    token.TokenType
@@ -113,7 +115,26 @@ func TestNextToken(t *testing.T) {
 		{token.STRING, "foo\\ bar"},
 		{token.STRING, "foo\r bar"},
 		{token.STRING, "foo\" bar"},
-
+		{token.LBRACKET, "["},
+		{token.INT, "1"},
+		{token.COMMA, ","},
+		{token.INT, "2"},
+		{token.RBRACKET, "]"},
+		{token.SEMICOLON, ";"},
+		{token.LBRACE, "{"},
+		{token.INT, "1"},
+		{token.COLON, ":"},
+		{token.INT, "2"},
+		{token.COMMA, ","},
+		{token.STRING, "a"},
+		{token.COLON, ":"},
+		{token.STRING, "b"},
+		{token.COMMA, ","},
+		{token.TRUE, "true"},
+		{token.COLON, ":"},
+		{token.FALSE, "false"},
+		{token.RBRACE, "}"},
+		{token.SEMICOLON, ";"},
 		{token.EOF, ""},
 	}
 
