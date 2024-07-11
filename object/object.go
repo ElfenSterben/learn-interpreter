@@ -21,6 +21,8 @@ const (
 	OBJ_TYPE_BUILTIN      = "BuiltIn"
 	OBJ_TYPE_ARRAY        = "Array"
 	OBJ_TYPE_HASH         = "Hash"
+	OBJ_TYPE_QUOTE        = "Quote"
+	OBJ_TYPE_MACRO        = "Macro"
 )
 
 type HashKey struct {
@@ -174,5 +176,34 @@ func (h *Hash) Inspect() string {
 	out.WriteString("{")
 	out.WriteString(strings.Join(pairs, ", "))
 	out.WriteString("}")
+	return out.String()
+}
+
+type Quote struct {
+	Node ast.Node
+}
+
+func (q *Quote) Type() ObjectType { return OBJ_TYPE_QUOTE }
+func (q *Quote) Inspect() string  { return "QUOTE(" + q.Node.String() + ")" }
+
+type Macro struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+	Env        *Environment
+}
+
+func (m *Macro) Type() ObjectType { return OBJ_TYPE_MACRO }
+func (m *Macro) Inspect() string {
+	var out bytes.Buffer
+	params := []string{}
+	for _, p := range m.Parameters {
+		params = append(params, p.String())
+	}
+	out.WriteString("fn")
+	out.WriteString("(")
+	out.WriteString(strings.Join(params, ", "))
+	out.WriteString(") {\n")
+	out.WriteString(m.Body.String())
+	out.WriteString("\n}")
 	return out.String()
 }
